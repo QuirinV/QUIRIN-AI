@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>QUIRIN AI</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--panel2:#1a2940;--line:#293a54;--text:#eef4ff;--muted:#9aabc4;--accent:#769cff;--accent2:#547de0}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#20385e 0,transparent 55%),var(--bg);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+.app{max-width:900px;margin:auto;min-height:100vh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+header{display:flex;align-items:center;gap:12px;padding:18px 2px;border-bottom:1px solid var(--line)}
+.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#7da4ff,#425fc3);display:grid;place-items:center;font-size:22px;box-shadow:0 7px 24px #416bd055}
+.brand{font-weight:750;letter-spacing:.4px;font-size:18px}.sub{font-size:12px;color:var(--muted);margin-top:3px}.status{margin-left:auto;font-size:12px;color:#a9e6c0;background:#18372d;border:1px solid #285440;padding:6px 10px;border-radius:99px}
+main{flex:1;display:flex;flex-direction:column;padding:22px 0;gap:16px}
+.welcome{margin:auto 0;text-align:center;padding:26px 10px 18px}.orb{width:68px;height:68px;border-radius:23px;margin:0 auto 18px;display:grid;place-items:center;background:linear-gradient(145deg,#314b79,#1a2b49);font-size:32px;border:1px solid #48628c}
+h1{font-size:27px;margin:0 0 9px}.welcome p{color:var(--muted);max-width:470px;margin:auto;line-height:1.5}
+#messages{display:flex;flex-direction:column;gap:13px}.msg{max-width:88%;padding:13px 15px;border-radius:17px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.user{align-self:flex-end;background:#294477;border:1px solid #4265a2}.assistant{align-self:flex-start;background:var(--panel);border:1px solid var(--line)}
+.attachments{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.thumb{width:76px;height:76px;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0b1220}.thumb img{width:100%;height:100%;object-fit:cover}.thumb button{position:absolute;right:3px;top:3px;border:0;border-radius:50%;width:23px;height:23px;background:#07101ddd;color:white;font-size:15px}
+.composer{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:11px;box-shadow:0 15px 40px #0003}
+#preview{display:flex;gap:8px;flex-wrap:wrap;padding:2px 2px 9px}
+textarea{width:100%;resize:vertical;min-height:52px;max-height:150px;border:0;outline:0;background:transparent;color:var(--text);font:inherit;padding:8px}
+.controls{display:flex;align-items:center;gap:8px}.tool{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:13px;padding:10px 12px;font-size:14px}.tool:active,.send:active{transform:scale(.97)}.send{margin-left:auto;border:0;background:var(--accent2);color:white;border-radius:13px;padding:11px 17px;font-weight:700;font-size:14px}
+.hint{font-size:11px;color:var(--muted);padding:9px 4px 3px;text-align:center;line-height:1.4}
+input[type=file]{display:none}
+@media(min-width:700px){.app{padding-left:28px;padding-right:28px}.welcome{padding:55px 10px 35px}.msg{max-width:75%}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">✦</div>
+  <div><div class="brand">QUIRIN AI</div><div class="sub">Dein persönlicher KI-Assistent</div></div>
+  <div class="status">● Prototyp</div>
+</header>
+<main>
+  <section class="welcome" id="welcome">
+    <div class="orb">✧</div>
+    <h1>Was kann ich für dich tun?</h1>
+    <p>Schreibe eine Nachricht oder füge Bilder und Arbeitsblätter hinzu. Die KI-Anbindung folgt im nächsten Entwicklungsschritt.</p>
+  </section>
+  <section id="messages" aria-live="polite"></section>
+</main>
+<section class="composer">
+  <div id="preview"></div>
+  <textarea id="prompt" placeholder="Schreibe eine Nachricht an QUIRIN AI …" rows="2"></textarea>
+  <div class="controls">
+    <label class="tool" for="files">＋ Bilder</label>
+    <input id="files" type="file" accept="image/*" multiple>
+    <button class="tool" id="clear" type="button">Leeren</button>
+    <button class="send" id="send" type="button">Senden ↑</button>
+  </div>
+</section>
+<div class="hint">Prototyp 0.1 · Bilder bleiben nur vorübergehend in dieser Browser-Sitzung. Noch keine echte KI-Verarbeitung.</div>
+</div>
+<script>
+const input=document.getElementById('files'), preview=document.getElementById('preview'), promptBox=document.getElementById('prompt');
+const messages=document.getElementById('messages'), welcome=document.getElementById('welcome');
+let selected=[];
+function renderPreview(){
+  preview.replaceChildren();
+  selected.forEach((file,index)=>{
+    const url=URL.createObjectURL(file), wrap=document.createElement('div');wrap.className='thumb';
+    const img=document.createElement('img');img.src=url;img.alt=file.name;
+    const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Bild entfernen');
+    remove.onclick=()=>{URL.revokeObjectURL(url);selected.splice(index,1);renderPreview()};
+    wrap.append(img,remove);preview.append(wrap);
+  });
+}
+input.addEventListener('change',()=>{
+  const incoming=[...input.files].filter(f=>f.type.startsWith('image/'));
+  selected.push(...incoming);renderPreview();input.value='';
+});
+function addMessage(text,kind,files=[]){
+  const box=document.createElement('div');box.className='msg '+kind;box.textContent=text;
+  if(files.length){const row=document.createElement('div');row.className='attachments';files.forEach(file=>{const img=document.createElement('img');img.src=URL.createObjectURL(file);img.alt='Angehängtes Bild';img.className='thumb';row.append(img)});box.append(row)}
+  messages.append(box);
+}
+document.getElementById('send').onclick=()=>{
+  const text=promptBox.value.trim();
+  if(!text&&!selected.length)return;
+  welcome.style.display='none';
+  addMessage(text||'Bitte analysiere diese Bilder.', 'user', selected);
+  promptBox.value='';selected=[];renderPreview();
+  addMessage('Die Oberfläche funktioniert! Die Verbindung zu einem KI-Modell und die echte Bildanalyse richten wir im nächsten Schritt über einen sicheren Server ein.', 'assistant');
+};
+document.getElementById('clear').onclick=()=>{
+  selected=[];renderPreview();promptBox.value='';
+};
+promptBox.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();document.getElementById('send').click()}});
+window.addEventListener('pagehide',()=>{selected=[]});
+</script>
+</body>
+</html>
